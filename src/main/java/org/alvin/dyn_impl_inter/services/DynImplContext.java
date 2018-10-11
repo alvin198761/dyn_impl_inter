@@ -1,14 +1,12 @@
 package org.alvin.dyn_impl_inter.services;
 
-import net.sf.cglib.beans.BeanGenerator;
-import net.sf.cglib.proxy.Enhancer;
 import net.sf.cglib.proxy.MethodInterceptor;
 import net.sf.cglib.proxy.MethodProxy;
 import org.alvin.dyn_impl_inter.test.TestInterFace;
+import org.alvin.dyn_impl_inter.utils.DynBeanUtils;
 import org.alvin.mini_inject.annotations.MiniComponent;
 import org.alvin.mini_inject.annotations.MiniRun;
 
-import java.io.Serializable;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.HashMap;
@@ -20,29 +18,17 @@ public class DynImplContext implements MethodInterceptor {
 	private Map<String, Object> dynEnhancerMap = new HashMap<>();
 	private Map<String, Object> synGeneratorMap = new HashMap<>();
 
-	public void enhancer(Class claxx, String id) {
-		Enhancer enhancer = new Enhancer();
-		enhancer.setSuperclass(claxx);
-		// 回调方法
-		enhancer.setCallback(this);
-		// 创建代理对象
-		dynEnhancerMap.put(id, enhancer.create());
+	public void enhancer(Class clazz, String id) {
+		dynEnhancerMap.put(id, DynBeanUtils.dynImplInter(clazz, this));
 	}
 
 	public void generator(Class superClass, Map<String, Class> propertyMap, String id) {
-		BeanGenerator beanGenerator = new BeanGenerator();
-		if (superClass != null) {
-			beanGenerator.setSuperclass(superClass);
-		}
-		// 动态指定属性
-		propertyMap.forEach(beanGenerator::addProperty);
-		synGeneratorMap.put(id,beanGenerator.create());
+		synGeneratorMap.put(id, DynBeanUtils.generatorObj(superClass, propertyMap));
 	}
 
 	@Override
 	public Object intercept(Object o, Method method, Object[] objects, MethodProxy methodProxy) throws Throwable {
-		//这里是动态实现的逻辑，
-	 	return null;
+		return null;
 	}
 
 	/**
@@ -72,18 +58,17 @@ public class DynImplContext implements MethodInterceptor {
 		//测试动态实现接口
 		enhancer(TestInterFace.class, TestInterFace.class.getSimpleName());
 		TestInterFace testInterFace = getDynImplInter(TestInterFace.class.getSimpleName(), TestInterFace.class);
-		try{
-//			testInterFace.getList();
+		try {
 			testInterFace.test();
-		}catch (Exception ex){
+		} catch (Exception ex) {
 			System.out.println(ex.getMessage());
 		}
 		//测试动态创建类
-		Map<String,Class> map = new HashMap<>();
-		map.put("name" ,String.class);
-		map.put("id",Integer.class);
+		Map<String, Class> map = new HashMap<>();
+		map.put("name", String.class);
+		map.put("id", Integer.class);
 
-		generator(null ,map,"testbean");
+		generator(null, map, "testbean");
 
 		Object bean = getGeneratorObj("testbean");
 		Method setName = null;
